@@ -1,4 +1,4 @@
-import express from "express"
+import express from "express";
 import { env } from "./config/env";
 import { upload } from "./config/multer";
 import { z } from "zod";
@@ -27,7 +27,7 @@ app.get("/upload", upload.single("file"), async (req, res) => {
 });
 
 const decodeBodySchema = z.object({
-  fileName: z.string()
+  fileName: z.string(),
 });
 
 app.get("/decode", async (req, res) => {
@@ -47,15 +47,20 @@ app.get("/decode", async (req, res) => {
 });
 
 app.get("/test", async (req, res) => {
-    const stream = fs.createReadStream("temp/1fb98fd7-769c-4dd0-8dbd-7193fedb5343.mp4");
-    const chunks: Buffer[] = [];
+  const stream = fs.createReadStream(
+    "temp/1fb98fd7-769c-4dd0-8dbd-7193fedb5343.mp4"
+  );
+
+  const chunks: Buffer[] = [];
   stream.on("data", (chunk: Buffer) => {
     // console.log(chunk)
-        chunks.push(chunk);
-    });
+    chunks.push(chunk);
+  });
 
   stream.on("end", () => {
-        fs.writeFileSync("target/1fb98fd7-769c-4dd0-8dbd-7193fedb5343.mp4", Buffer.concat(chunks));
+    fs.writeFileSync(
+      "target/1fb98fd7-769c-4dd0-8dbd-7193fedb5343.mp4",
+      Buffer.concat(chunks)
     );
     res.status(200).json({ message: "OK" });
   });
