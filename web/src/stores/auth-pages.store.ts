@@ -5,7 +5,7 @@ type Alert = {
   type: "error" | "success";
 };
 
-type AlertState = Alert | null;
+export type AlertState = Alert | null;
 
 type AuthState = {
   signUpAlert: AlertState;
@@ -26,15 +26,60 @@ export const useAuthStore = create<AuthStore>((set) => ({
   setSignInAlert: (alert) => set({ signInAlert: alert }),
 }));
 
-export const useSetSignInAlert = () => {
-  const setSignInAlert = useAuthStore((state) => state.setSignInAlert);
+export const useSignUpAlert = () => {
+  const [alert, setAlert] = useAuthStore((state) => [
+    state.signUpAlert,
+    state.setSignUpAlert,
+  ]);
+
+  function closeAlert() {
+    setAlert(null);
+  }
+
+  return [alert, closeAlert] as const;
+};
+
+export const useSignInAlert = () => {
+  const [alert, setAlert] = useAuthStore((state) => [
+    state.signInAlert,
+    state.setSignInAlert,
+  ]);
+
+  function closeAlert() {
+    setAlert(null);
+  }
+
+  return [alert, closeAlert] as const;
+};
+
+export const useSetAlert = () => {
+  const [setSignIn, setSignUp] = useAuthStore((state) => [
+    state.setSignInAlert,
+    state.setSignUpAlert,
+  ]);
 
   return {
-    setSuccessSignUpAlert() {
-      setSignInAlert({
-        message: "You have successfully signed up",
-        type: "success",
-      });
+    signUp: {
+      setFailedAlert(message: string) {
+        setSignUp({
+          message,
+          type: "error",
+        });
+      },
+    },
+    signIn: {
+      setSuccessSignIn() {
+        setSignIn({
+          message: "You have successfully signed up",
+          type: "success",
+        });
+      },
+      setFailedAlert(message: string) {
+        setSignIn({
+          message,
+          type: "error",
+        });
+      },
     },
   };
 };

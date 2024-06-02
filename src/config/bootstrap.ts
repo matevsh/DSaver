@@ -4,6 +4,8 @@ import { router } from "../modules/router";
 import { env } from "./env";
 import session from "express-session";
 
+const COOKIE_MAX_AGE = 1000 * 60 * 60 * 24 * 30; // 30 days
+
 export function bootstrap() {
   const app = express();
 
@@ -23,6 +25,9 @@ export function bootstrap() {
     session({
       secret: env.SESSION_SECRET,
       resave: false,
+      cookie: {
+        maxAge: COOKIE_MAX_AGE,
+      },
       saveUninitialized: true,
     })
   );

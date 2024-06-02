@@ -1,20 +1,33 @@
 import { ZodType } from "zod";
 import { ENV } from "@/common/env.ts";
+import { ResponseSchema } from "@/utils/response-schema.ts";
 
-export async function fetcher<T>(
+const FETCH_FAILED =
+  "Unknown server error, please try again later or contact support.";
+
+export async function fetcher<T extends ResponseSchema>(
   url: string,
   zodSchema: ZodType<T>,
   fetchArgs?: RequestInit
 ) {
-  const response = await fetch(`${ENV.VITE_API_HOST}${url}`, fetchArgs);
+  const response = await fetch(`${ENV.VITE_API_HOST}${url}`, {
+    credentials: "include",
+    ...fetchArgs,
+  }).catch(() => {
+    throw new Error(FETCH_FAILED);
+  });
 
   const rawData = await response.json();
 
-  const data = zodSchema.parse(rawData);
+  const parseResult = zodSchema.safeParse(rawData);
 
-  if (!response.ok) {
-    throw new Error("Failed to fetch data");
+  if (!parseResult.success) {
+    throw new Error(FETCH_FAILED);
   }
 
-  return data;
+  if (!parseResult.data.success) {
+    throw new Error(parseResult.data.message);
+  }
+
+  return parseResult.data;
 }

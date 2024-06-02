@@ -1,44 +1,89 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { paths } from "@/router/paths.ts";
+import { FormAlert } from "@/components/ui/form-alert.tsx";
+import { useSetAlert, useSignInAlert } from "@/stores/auth-pages.store.ts";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { ErrorMessage } from "@/components/ui/error-message.tsx";
+import {
+  signInFormSchema,
+  SignInFormValues,
+} from "@/pages/auth/sign-in/sign-in-form-schema.ts";
+import { getErrorMessage } from "@/utils/get-error-message.ts";
+import { useSignIn } from "@/pages/auth/sign-in/use-sign-in.ts";
 
 export function SignInPage() {
+  const {
+    formState: { errors },
+    handleSubmit,
+    register,
+  } = useForm<SignInFormValues>({
+    resolver: zodResolver(signInFormSchema),
+  });
+
+  const [_location, navigate] = useLocation();
+
+  const [alert, closeAlert] = useSignInAlert();
+  const { signIn } = useSetAlert();
+
+  function onSuccessSignIn() {
+    navigate(paths.home);
+    closeAlert();
+  }
+
+  function onErrorSignIn(error: unknown) {
+    signIn.setFailedAlert(getErrorMessage(error));
+  }
+
+  const { mutate } = useSignIn(onSuccessSignIn, onErrorSignIn);
+
+  const onSubmit = handleSubmit((data) => {
+    mutate(data);
+  });
+
   return (
     <>
+      <FormAlert alert={alert} closeAlert={closeAlert} />
       <div className="grid gap-2">
         <h1 className="text-3xl font-bold">Sign In</h1>
         <p className="text-balance text-muted-foreground">
           Enter your login below to sign in to your account
         </p>
       </div>
-      <div className="grid gap-4">
-        <div className="grid gap-2">
-          <Label htmlFor="login">Login</Label>
-          <Input id="login" placeholder="Your login..." required />
-        </div>
-        <div className="grid gap-2">
-          <div className="flex items-center">
-            <Label htmlFor="password">Password</Label>
-            <Link
-              href="/forgot-password"
-              className="ml-auto inline-block text-sm underline"
-            >
-              Forgot your password?
-            </Link>
+      <form onSubmit={onSubmit}>
+        <div className="grid gap-4">
+          <div className="grid gap-2">
+            <Label htmlFor="login">Login</Label>
+            <Input
+              id="login"
+              placeholder="Your login..."
+              {...register("login")}
+            />
+            <ErrorMessage error={errors.login} />
           </div>
-          <Input
-            id="password"
-            type="password"
-            required
-            placeholder="Your password..."
-          />
+          <div className="grid gap-2">
+            <div className="flex items-center">
+              <Label htmlFor="password">Password</Label>
+              <Link href="#" className="ml-auto inline-block text-sm underline">
+                Forgot your password?
+              </Link>
+            </div>
+            <Input
+              id="password"
+              type="password"
+              placeholder="Your password..."
+              {...register("password")}
+            />
+            <ErrorMessage error={errors.password} />
+          </div>
+          <Button type="submit" className="w-full">
+            Sign In
+          </Button>
         </div>
-        <Button type="submit" className="w-full">
-          Login
-        </Button>
-      </div>
+      </form>
       <div className="mt-4 text-sm">
         Don&apos;t have an account?{" "}
         <Link href={paths.auth.signUp} className="underline">

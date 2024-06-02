@@ -1,7 +1,13 @@
 import { Response } from "express";
 import { response } from "../response/create-response";
+import { HTTP_RESPONSES } from "../response/http-codes";
+import { HttpError } from "./errors";
 
 export function handleError(res: Response, e: unknown) {
+  if (e instanceof HttpError) {
+    return response(res, e.response);
+  }
+
   if (e instanceof Error) {
     return response(res, {
       success: false,
@@ -9,5 +15,5 @@ export function handleError(res: Response, e: unknown) {
     });
   }
 
-  return response(res, false);
+  return response(res, HTTP_RESPONSES.INTERNAL_SERVER_ERROR);
 }

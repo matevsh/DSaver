@@ -17,7 +17,9 @@ import {
   SignUpFormValues,
 } from "@/pages/auth/sign-up/sign-up-form-schema.ts";
 import { useSignUp } from "@/pages/auth/sign-up/use-sign-up.ts";
-import { useSetSignInAlert } from "@/stores/auth-pages.store.ts";
+import { useSignUpAlert, useSetAlert } from "@/stores/auth-pages.store.ts";
+import { getErrorMessage } from "@/utils/get-error-message.ts";
+import { FormAlert } from "@/components/ui/form-alert.tsx";
 
 export function SignUpPage() {
   const {
@@ -29,28 +31,29 @@ export function SignUpPage() {
   });
 
   const [_location, navigate] = useLocation();
-  const { setSuccessSignUpAlert } = useSetSignInAlert();
+
+  const [alert, closeAlert] = useSignUpAlert();
+  const { signIn, signUp } = useSetAlert();
 
   function onSuccessSignUp() {
     navigate(paths.auth.signIn);
-    setSuccessSignUpAlert();
+    signIn.setSuccessSignIn();
+    closeAlert();
   }
 
-  const { mutate, data, error } = useSignUp(onSuccessSignUp);
+  function onErrorSignUp(error: unknown) {
+    signUp.setFailedAlert(getErrorMessage(error));
+  }
+
+  const { mutate } = useSignUp(onSuccessSignUp, onErrorSignUp);
 
   const onSubmit = handleSubmit((data) => {
     mutate(data);
   });
 
-  console.log({
-    data,
-    error,
-  });
-
   return (
     <>
-      {JSON.stringify(data)}
-      {JSON.stringify(error)}
+      <FormAlert alert={alert} closeAlert={closeAlert} />
       <div className="grid gap-2">
         <h1 className="text-3xl font-bold">Sign Up</h1>
         <p className="text-balance text-muted-foreground">

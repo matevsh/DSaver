@@ -41,8 +41,6 @@ export function MainLayout({ children }: MainLayoutProps) {
     [navigate]
   );
 
-  console.log(children);
-
   return (
     <div className="relative">
       <div className="absolute top-0 left-0 right-0 m-4 flex justify-between">

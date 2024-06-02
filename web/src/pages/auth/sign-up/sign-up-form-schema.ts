@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { responseSchema } from "@/utils/response-schema.ts";
 
 export const signUpFormSchema = z
   .object({
@@ -19,6 +20,4 @@ export const signUpFormSchema = z
 
 export type SignUpFormValues = z.infer<typeof signUpFormSchema>;
 
-export const signUpMutationResponseSchema = z.object({
-  message: z.string(),
-});
+export const signUpMutationResponseSchema = responseSchema();

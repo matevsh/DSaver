@@ -10,30 +10,28 @@ type JsonResponse<T> = {
 
 // Main reason for do that is had centralized response from server
 
+export type ResponseInput<T> = JsonResponse<T> | HttpResponse;
+
+function isContainsBody<T>(
+  response: ResponseInput<T>
+): response is JsonResponse<T> {
+  return (response as JsonResponse<T>).data !== undefined;
+}
+
 export function response<T extends object>(
   expressRes: Response,
-  response: JsonResponse<T> | boolean
+  response: ResponseInput<T>
 ) {
-  const isBoolInput = typeof response === "boolean";
-
-  const success = isBoolInput ? response : response.success;
-
-  const httpResponse = success
+  const httpResponse = response.success
     ? HTTP_RESPONSES.OK
     : HTTP_RESPONSES.INTERNAL_SERVER_ERROR;
 
-  const message = isBoolInput
-    ? httpResponse.message
-    : response.message ||
-      response.httpResponse?.message ||
-      httpResponse.message;
-
   const serverResponse: JsonResponse<T> = {
-    success,
-    message,
+    success: response.success || httpResponse.success,
+    message: response?.message || httpResponse.message,
   };
 
-  if (!isBoolInput && response?.data) {
+  if (isContainsBody(response) && response.data) {
     serverResponse.data = response.data;
   }
 
