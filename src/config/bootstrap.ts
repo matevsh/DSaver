@@ -3,6 +3,8 @@ import cors from "cors";
 import { router } from "../modules/router";
 import { env } from "./env";
 import session from "express-session";
+import { logger } from "../modules/logger/logger-middleware";
+import { Logger } from "../modules/logger/logger";
 
 const COOKIE_MAX_AGE = 1000 * 60 * 60 * 24 * 30; // 30 days
 
@@ -32,9 +34,12 @@ export function bootstrap() {
     })
   );
 
+  app.use(logger);
+
   app.use(router);
 
   app.listen(env.PORT, () => {
-    console.log(`Server is running on port http://localhost:${env.PORT}`);
+    console.clear();
+    Logger.info(`Server is running on port http://localhost:${env.PORT}`);
   });
 }

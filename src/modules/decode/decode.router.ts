@@ -3,4 +3,4 @@ import { decodeController } from "./decode.controller";
 
 export const decodeRouter = Router();
 
-decodeRouter.get("/decode", decodeController.decodeFile);
+decodeRouter.get("/decode/:fileId", decodeController.decodeFile);

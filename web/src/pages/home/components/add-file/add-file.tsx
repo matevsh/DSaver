@@ -5,7 +5,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog.tsx";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Input } from "@/components/ui/input.tsx";
@@ -21,9 +21,14 @@ import {
 } from "@/components/ui/select.tsx";
 import { LoadingOverlay } from "@/components/ui/loading-overlay.tsx";
 import { useDiscordChannels } from "@/pages/home/components/add-file/use-discord-channels.ts";
-import { Card } from "@/components/ui/card.tsx";
 import { HardDrive } from "lucide-react";
 import { DiscordIcon } from "@/components/icons/discord-icon.tsx";
+import { OptionCard } from "@/pages/home/components/add-file/option-card.tsx";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { fetcher } from "@/utils/fetcher.ts";
+import { responseSchema } from "@/utils/response-schema.ts";
+import { objectToFormData } from "@/utils/object-to-form-data.ts";
+import { toast } from "sonner";
 
 type AddFileModalProps = {
   isOpen: boolean;
@@ -32,10 +37,15 @@ type AddFileModalProps = {
 
 const addFileFormSchema = z.object({
   name: z.string().min(1, "Name is required"),
+  channel: z.string().min(1, "Channel is required"),
   file: z
     .instanceof(FileList)
-    .refine((value) => value.length > 0, "File is required"),
+    .refine((value) => value.length > 0, "File is required")
+    .transform(([value]) => value),
+  cloudOrigin: z.string().min(1, "Cloud origin is required"),
 });
+
+type AddFileForm = z.infer<typeof addFileFormSchema>;
 
 const CLOUD_ORIGINS = [
   {
@@ -43,6 +53,7 @@ const CLOUD_ORIGINS = [
     name: "HDD",
     description: "For files smaller files, maximum 10MB",
     icon: <HardDrive height={48} width={48} />,
+    disabled: true,
   },
   {
     id: "discord",
@@ -53,86 +64,123 @@ const CLOUD_ORIGINS = [
 ];
 
 export function AddFileModal({ isOpen, toggle }: AddFileModalProps) {
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm({
+  const form = useForm<AddFileForm>({
     resolver: zodResolver(addFileFormSchema),
+    defaultValues: {
+      name: "",
+      channel: "",
+      cloudOrigin: "discord",
+    },
   });
 
-  const { isLoading: isDCLoading, data: DCData } = useDiscordChannels();
+  const queryClient = useQueryClient();
 
-  const onSubmit = handleSubmit((data) => {
-    console.log(data);
+  const { isLoading: isChannelsLoading, data: channels } = useDiscordChannels();
+
+  const { mutate, isPending } = useMutation({
+    mutationFn: (data: AddFileForm) =>
+      fetcher("/upload-file", responseSchema(), {
+        body: objectToFormData(data),
+        method: "POST",
+      }),
+    onSuccess: () => {
+      toggle();
+      return queryClient.invalidateQueries({
+        queryKey: ["files"],
+      });
+    },
+    onError: (err) => {
+      if (err instanceof Error) {
+        toast.error(err.message);
+      } else toast.error("Unknown error");
+    },
+  });
+
+  const onSubmit = form.handleSubmit((data) => {
+    mutate(data);
   });
 
   return (
     <Dialog onOpenChange={toggle} open={isOpen}>
       <DialogContent className="max-w-[350px]">
-        <LoadingOverlay visible={[isDCLoading]} />
+        <LoadingOverlay visible={[isChannelsLoading, isPending]} />
         <DialogHeader>
           <DialogTitle>Upload file</DialogTitle>
           <DialogDescription>Send any type of file to cloud.</DialogDescription>
         </DialogHeader>
-        <form onSubmit={onSubmit} className="flex flex-col">
-          <form>
-            <div className="grid w-full items-center gap-1">
-              <div className="flex flex-col">
-                <Label htmlFor="name" className="pb-1.5">
-                  Name
-                </Label>
-                <Input
-                  id="name"
-                  placeholder="Name of your project"
-                  {...register("name")}
-                />
-                <ErrorMessage error={errors.name} />
-              </div>
-              <div className="flex flex-col">
-                <Label htmlFor="file" className="pb-1.5">
-                  File
-                </Label>
-                <Input type="file" {...register("file")} />
-                <ErrorMessage error={errors.file} />
-              </div>
-              <div className="flex flex-col space-y-1.5">
-                <Label htmlFor="framework">Channel</Label>
-                <Select>
-                  <SelectTrigger id="framework">
-                    <SelectValue placeholder="Select channel" />
-                  </SelectTrigger>
-                  <SelectContent position="popper">
-                    {DCData?.map(({ id, name }) => (
-                      <SelectItem key={id} value={id}>
-                        {name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <ErrorMessage error={errors.file} />
-              </div>
-              <div className="flex flex-col space-y-1.5">
-                <Label htmlFor="framework">Cloud origin</Label>
-                <div className="flex gap-2">
-                  {CLOUD_ORIGINS.map(({ id, name, icon, description }) => (
-                    <Card
-                      key={id}
-                      className="p-2.5 grow aspect-square basis-1 flex flex-col hover:scale-[0.99] transition cursor-pointer"
-                    >
-                      <div className="flex justify-center items-center grow">
-                        {icon}
-                      </div>
-                      <div className="text-center select-none">
-                        <p className="font-medium">{name}</p>
-                        <p className="text-xs text-gray-400">{description}</p>
-                      </div>
-                    </Card>
-                  ))}
-                </div>
-              </div>
+        <form onSubmit={onSubmit}>
+          <div className="grid w-full items-center gap-1">
+            <div className="flex flex-col">
+              <Label htmlFor="name" className="pb-1.5">
+                Name
+              </Label>
+              <Input
+                id="name"
+                placeholder="Name of your project"
+                {...form.register("name")}
+              />
+              <ErrorMessage error={form.formState.errors.name} />
             </div>
-          </form>
+            <div className="flex flex-col">
+              <Label htmlFor="file" className="pb-1.5">
+                File
+              </Label>
+              <Input type="file" {...form.register("file")} />
+              <ErrorMessage error={form.formState.errors.file} />
+            </div>
+            <div className="flex flex-col space-y-1.5">
+              <Label htmlFor="framework">Channel</Label>
+              <Controller
+                control={form.control}
+                name="channel"
+                render={({ field }) => (
+                  <Select
+                    onValueChange={field.onChange}
+                    value={field.value}
+                    disabled={field.disabled}
+                  >
+                    <SelectTrigger id="framework">
+                      <SelectValue placeholder="Select channel" />
+                    </SelectTrigger>
+                    <SelectContent position="popper">
+                      {channels?.data.map(({ id, name }) => (
+                        <SelectItem key={id} value={id}>
+                          {name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+              <ErrorMessage error={form.formState.errors.channel} />
+            </div>
+            <div className="flex flex-col space-y-1.5">
+              <Label htmlFor="framework">Cloud origin</Label>
+              <Controller
+                control={form.control}
+                render={({ field }) => (
+                  <div className="flex gap-2">
+                    {CLOUD_ORIGINS.map(
+                      ({ id, name, icon, description, disabled }) => (
+                        <OptionCard
+                          id={id}
+                          key={id}
+                          icon={icon}
+                          name={name}
+                          description={description}
+                          active={field.value === id}
+                          onChange={field.onChange}
+                          disabled={disabled}
+                        />
+                      )
+                    )}
+                  </div>
+                )}
+                name="cloudOrigin"
+              />
+              <ErrorMessage error={form.formState.errors.cloudOrigin} />
+            </div>
+          </div>
           <div className="flex justify-between pt-6">
             <Button
               type="button"

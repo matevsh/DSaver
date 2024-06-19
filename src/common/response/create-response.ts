@@ -1,7 +1,7 @@
 import { Response } from "express";
 import { HTTP_RESPONSES, HttpResponse } from "./http-codes";
 
-type JsonResponse<T> = {
+export type JsonResponse<T> = {
   success: boolean;
   message?: string;
   httpResponse?: HttpResponse;
@@ -18,22 +18,23 @@ function isContainsBody<T>(
   return (response as JsonResponse<T>).data !== undefined;
 }
 
-export function response<T extends object>(
-  expressRes: Response,
-  response: ResponseInput<T>
-) {
-  const httpResponse = response.success
-    ? HTTP_RESPONSES.OK
-    : HTTP_RESPONSES.INTERNAL_SERVER_ERROR;
+export function response<T>(expressRes: Response, response: ResponseInput<T>) {
+  try {
+    const httpResponse = response.success
+      ? HTTP_RESPONSES.OK
+      : HTTP_RESPONSES.INTERNAL_SERVER_ERROR;
 
-  const serverResponse: JsonResponse<T> = {
-    success: response.success || httpResponse.success,
-    message: response?.message || httpResponse.message,
-  };
+    const serverResponse: JsonResponse<T> = {
+      success: response.success || httpResponse.success,
+      message: response?.message || httpResponse.message,
+    };
 
-  if (isContainsBody(response) && response.data) {
-    serverResponse.data = response.data;
+    if (isContainsBody(response) && response.data) {
+      serverResponse.data = response.data;
+    }
+
+    return expressRes.status(httpResponse.code).json(serverResponse);
+  } catch (e) {
+    console.error("Error on response", e);
   }
-
-  return expressRes.status(httpResponse.code).json(serverResponse);
 }

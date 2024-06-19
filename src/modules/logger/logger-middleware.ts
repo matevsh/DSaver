@@ -1,9 +1,7 @@
 import { Request, Response, NextFunction } from "express";
+import { Logger } from "./logger";
 
 export function logger(req: Request, res: Response, next: NextFunction) {
-  if (req.session.user) {
-    next();
-  } else {
-    res.status(401).json({ message: "Unauthorized" });
-  }
+  Logger.request(req.method, req.url);
+  next();
 }

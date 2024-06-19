@@ -2,7 +2,6 @@ import { AddFileModal } from "@/pages/home/components/add-file/add-file.tsx";
 import { useState } from "react";
 import { FilesList } from "@/pages/home/components/files-list/files-list.tsx";
 import { Button } from "@/components/ui/button.tsx";
-import { useUser } from "@/shared/queries/use-user/use-user.ts";
 
 type HeaderButtonProps = {
   setAddFileModalOpen: () => void;
@@ -18,7 +17,6 @@ function HeaderButton({ setAddFileModalOpen }: HeaderButtonProps) {
 
 export function HomePage() {
   const [addFileModalOpen, setAddFileModalOpen] = useState(false);
-  const { user } = useUser();
 
   function toggleAddFileModal() {
     setAddFileModalOpen((prev) => !prev);
@@ -26,7 +24,6 @@ export function HomePage() {
 
   return (
     <>
-      <pre>{JSON.stringify(user, null, 2)}</pre>
       <FilesList
         headerButton={<HeaderButton setAddFileModalOpen={toggleAddFileModal} />}
       />

@@ -4,12 +4,13 @@ import { SettingsPage } from "@/pages/settings/settings.page.tsx";
 import { ProfilePage } from "@/pages/profile/profie.page.tsx";
 import { paths } from "@/router/paths.ts";
 import { SignInPage } from "@/pages/auth/sign-in/sign-in.page.tsx";
-import { MainLayout } from "@/components/layout/main-layout.tsx";
+import { MainLayout } from "@/components/layout/main-layout/main-layout.tsx";
 import { FC } from "react";
 import { AuthLayout } from "@/components/layout/auth-layout.tsx";
 import { ParentNode } from "@/types/parent-node.ts";
 import { SignUpPage } from "@/pages/auth/sign-up/sign-up.page.tsx";
 import { AuthGuard } from "@/common/guards/auth-guard.tsx";
+import { FileDetailsPage } from "@/pages/file-details/file-details.page.tsx";
 
 type Route = {
   path: string;
@@ -47,6 +48,11 @@ const routes: Route[] = [
     component: SignUpPage,
     layout: AuthLayout,
     authRequired: false,
+  },
+  {
+    path: paths.fileDetails,
+    component: FileDetailsPage,
+    authRequired: true,
   },
 ];
 

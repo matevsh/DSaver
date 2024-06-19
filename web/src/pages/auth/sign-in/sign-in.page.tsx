@@ -1,10 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Link, useLocation } from "wouter";
+import { Link } from "wouter";
 import { paths } from "@/router/paths.ts";
 import { FormAlert } from "@/components/ui/form-alert.tsx";
-import { useSetAlert, useSignInAlert } from "@/stores/auth-pages.store.ts";
+import { useSetAuthAlert, useSignInAlert } from "@/stores/auth-pages.store.ts";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ErrorMessage } from "@/components/ui/error-message.tsx";
@@ -14,6 +14,7 @@ import {
 } from "@/pages/auth/sign-in/sign-in-form-schema.ts";
 import { getErrorMessage } from "@/utils/get-error-message.ts";
 import { useSignIn } from "@/pages/auth/sign-in/use-sign-in.ts";
+import { useQueryClient } from "@tanstack/react-query";
 
 export function SignInPage() {
   const {
@@ -24,14 +25,16 @@ export function SignInPage() {
     resolver: zodResolver(signInFormSchema),
   });
 
-  const [_location, navigate] = useLocation();
+  const queryClient = useQueryClient();
 
   const [alert, closeAlert] = useSignInAlert();
-  const { signIn } = useSetAlert();
+  const { signIn } = useSetAuthAlert();
 
   function onSuccessSignIn() {
-    navigate(paths.home);
     closeAlert();
+    return queryClient.invalidateQueries({
+      queryKey: ["user-session"],
+    });
   }
 
   function onErrorSignIn(error: unknown) {

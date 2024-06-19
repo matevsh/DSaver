@@ -1,46 +1,30 @@
-import { Request, Response } from "express";
-import { client } from "../../database/client";
-import { DiscordClientIntegration } from "../discord/integration/discord-integration";
-
-async function getFilesList(req: Request, res: Response) {
-  const query = req.query?.search as string | undefined;
-
-  const channelNameMap = new Map<string, string>();
-
-  const discordInstance = await DiscordClientIntegration.getInstance();
-
-  const rawFiles = await client.file.findMany({
-    where: {
-      name: {
-        contains: query,
-      },
-    },
-    include: {
-      _count: true,
-    },
-  });
-
-  const files = await Promise.all(
-    rawFiles.map(async (file) => {
-      const { _count, channelId, ...rest } = file;
-
-      let channelName = channelNameMap.get(channelId);
-      if (!channelName) {
-        channelName = await discordInstance.getChannelName(channelId);
-        channelNameMap.set(channelId, channelName);
-      }
-
-      return {
-        ...rest,
-        chunksCount: _count.FileChunk,
-        channelName,
-      };
-    })
-  );
-
-  res.status(200).json(files);
-}
+import { route } from "../../common/error-handling/route";
+import { filesService } from "./files.service";
+import { HTTP_RESPONSES } from "../../common/response/http-codes";
+import { HttpError } from "../../common/error-handling/errors";
 
 export const filesController = {
-  getFilesList,
+  getFilesList: route(async ({ req }) => {
+    const search = filesService.getQuery(req.query.search);
+
+    const files = await filesService.getFiles(search);
+
+    return {
+      success: true,
+      data: files,
+    };
+  }),
+
+  getFileDetails: route(async ({ req }) => {
+    const fileId = req.params.fileId;
+
+    if (!fileId) throw new HttpError(HTTP_RESPONSES.BAD_REQUEST);
+
+    const file = await filesService.getFile(fileId);
+
+    return {
+      success: true,
+      data: file,
+    };
+  }),
 };

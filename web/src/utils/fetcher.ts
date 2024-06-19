@@ -1,11 +1,11 @@
 import { ZodType } from "zod";
 import { ENV } from "@/common/env.ts";
-import { ResponseSchema } from "@/utils/response-schema.ts";
+import { ServerResponse } from "@/utils/response-schema.ts";
 
 const FETCH_FAILED =
   "Unknown server error, please try again later or contact support.";
 
-export async function fetcher<T extends ResponseSchema>(
+export async function fetcher<T extends ServerResponse>(
   url: string,
   zodSchema: ZodType<T>,
   fetchArgs?: RequestInit
@@ -22,6 +22,7 @@ export async function fetcher<T extends ResponseSchema>(
   const parseResult = zodSchema.safeParse(rawData);
 
   if (!parseResult.success) {
+    console.log(parseResult.error.message);
     throw new Error(FETCH_FAILED);
   }
 

@@ -1,16 +1,16 @@
-import { Request, Response } from "express";
-import { DiscordClientIntegration } from "../discord/integration/discord-integration";
-
-async function decodeFile(req: Request, res: Response) {
-  const discordIntegration = await DiscordClientIntegration.getInstance();
-
-  const file = await discordIntegration.getFileChunks(
-    "clwncqoe50000gpkwthivsbo5"
-  );
-
-  res.status(200).download(file);
-}
+import { decodeService } from "./decode.service";
+import { route } from "../../common/error-handling/route";
+import { HTTP_RESPONSES } from "../../common/response/http-codes";
+import { HttpError } from "../../common/error-handling/errors";
 
 export const decodeController = {
-  decodeFile,
+  decodeFile: route(async ({ req, res }) => {
+    const fileId = req.params.fileId;
+
+    if (!fileId) throw new HttpError(HTTP_RESPONSES.BAD_REQUEST);
+
+    const file = await decodeService.decodeFile(fileId);
+
+    return void res.status(HTTP_RESPONSES.OK.code).download(file);
+  }),
 };

@@ -1,24 +1,19 @@
 import { HTTP_RESPONSES } from "../../common/response/http-codes";
 import { route } from "../../common/error-handling/route";
 import { omit } from "../../utils/omit";
-import {
-  checkInvitationCode,
-  comparePassword,
-  createUser,
-  getUserByLogin,
-  isLoginUnique,
-  isPasswordsSame,
-} from "./auth.service";
+import { authService } from "./auth.service";
 import { signInSchema, signUpSchema } from "./auth.schema";
 
 export const authController = {
   signUp: route(async ({ req }) => {
     const body = signUpSchema.parse(req.body);
-    isPasswordsSame(body.password, body.repeatPassword);
+    authService.isPasswordsSame(body.password, body.repeatPassword);
 
-    await isLoginUnique(body.login);
-    const invitationCode = await checkInvitationCode(body.invitationCode);
-    await createUser(body.login, body.password, invitationCode.id);
+    await authService.isLoginUnique(body.login);
+    const invitationCode = await authService.checkInvitationCode(
+      body.invitationCode
+    );
+    await authService.createUser(body.login, body.password, invitationCode.id);
 
     return HTTP_RESPONSES.CREATED;
   }),
@@ -26,8 +21,8 @@ export const authController = {
   signIn: route(async ({ req, session }) => {
     const body = signInSchema.parse(req.body);
 
-    const user = await getUserByLogin(body.login);
-    await comparePassword(body.password, user.passwordHash);
+    const user = await authService.getUserByLogin(body.login);
+    await authService.comparePassword(body.password, user.passwordHash);
 
     session.set(user);
     return HTTP_RESPONSES.OK;

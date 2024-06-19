@@ -17,7 +17,7 @@ import {
   SignUpFormValues,
 } from "@/pages/auth/sign-up/sign-up-form-schema.ts";
 import { useSignUp } from "@/pages/auth/sign-up/use-sign-up.ts";
-import { useSignUpAlert, useSetAlert } from "@/stores/auth-pages.store.ts";
+import { useSignUpAlert, useSetAuthAlert } from "@/stores/auth-pages.store.ts";
 import { getErrorMessage } from "@/utils/get-error-message.ts";
 import { FormAlert } from "@/components/ui/form-alert.tsx";
 
@@ -33,7 +33,7 @@ export function SignUpPage() {
   const [_location, navigate] = useLocation();
 
   const [alert, closeAlert] = useSignUpAlert();
-  const { signIn, signUp } = useSetAlert();
+  const { signIn, signUp } = useSetAuthAlert();
 
   function onSuccessSignUp() {
     navigate(paths.auth.signIn);

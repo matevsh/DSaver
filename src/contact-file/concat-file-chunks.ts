@@ -21,7 +21,6 @@ export async function concatFileChunks(
       chunks[index] = await fs.readFile(path.join(BUFFERS_PATH, fileName));
     })
   );
-
   const file = Buffer.concat(chunks);
   const targetFilePath = path.resolve(TARGET_DIR, `${fileName}.${extension}`);
   await fs.writeFile(targetFilePath, file);

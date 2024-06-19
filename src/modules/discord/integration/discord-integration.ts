@@ -6,6 +6,7 @@ import { BUFFERS_PATH, SIZE_OF_FILE_IN_BYTES } from "../../../config";
 import { writeFile } from "node:fs/promises";
 import { concatFileChunks } from "../../../contact-file/concat-file-chunks";
 import { ChannelTypeEnum } from "./channel-type-enum";
+import { User } from "@prisma/client";
 
 const CHANNEL_ID = "1215751953737453580";
 
@@ -42,6 +43,8 @@ export class DiscordClientIntegration {
   }
 
   public getTextChannel(channelId: string = CHANNEL_ID) {
+    console.log(channelId);
+
     const channel = this.client.channels.cache.get(channelId);
     if (!channel || !channel.isTextBased)
       throw new Error("getTextChannel: Invalid channel");
@@ -54,7 +57,14 @@ export class DiscordClientIntegration {
     index: number,
     fileId: string
   ) {
-    const message = await channel.send({ files: [buff] });
+    const message = await channel.send({
+      files: [
+        {
+          attachment: buff,
+          name: `${fileId}-${index}`,
+        },
+      ],
+    });
 
     await client.fileChunk.create({
       data: {
@@ -70,36 +80,14 @@ export class DiscordClientIntegration {
   }
 
   public async saveFileToDiscord(
-    name: string,
-    genName: string,
-    fileSize: number,
-    chunks: Buffer[]
+    chunk: Buffer,
+    index: number,
+    channelId: string,
+    fileAggregatorId: string
   ) {
-    const channel = this.getTextChannel();
+    const channel = this.getTextChannel(channelId);
 
-    const { name: genNameWithoutExt, ext } = extractFromFileName(genName);
-
-    const fileAggregator = await client.file.create({
-      data: {
-        name,
-        genName: genNameWithoutExt,
-        ext,
-        chunkSize: SIZE_OF_FILE_IN_BYTES,
-        size: fileSize,
-        channelId: channel.id,
-      },
-    });
-
-    await Promise.all(
-      chunks.map(async (chunk, index) => {
-        return this.saveChunkToDiscord(
-          channel,
-          chunk,
-          index,
-          fileAggregator.id
-        );
-      })
-    );
+    return this.saveChunkToDiscord(channel, chunk, index, fileAggregatorId);
   }
 
   public async readFileChunk(channel: TextChannel, messageId: string) {
@@ -136,13 +124,16 @@ export class DiscordClientIntegration {
 
     const chunks = await Promise.all(
       file.fileChunk.map(async (chunk) => {
-        await this.readFileChunk(fileChannel, chunk.messageId);
+        const fileBuff = await this.readFileChunk(fileChannel, chunk.messageId);
         return {
           fileName: chunk.messageId,
           index: chunk.index,
+          fileBuff,
         };
       })
     );
+
+    console.log(chunks);
 
     return concatFileChunks(chunks, file.ext, file.name);
   }

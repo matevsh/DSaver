@@ -52,7 +52,7 @@ export const useSignInAlert = () => {
   return [alert, closeAlert] as const;
 };
 
-export const useSetAlert = () => {
+export const useSetAuthAlert = () => {
   const [setSignIn, setSignUp] = useAuthStore((state) => [
     state.setSignInAlert,
     state.setSignUpAlert,
@@ -71,6 +71,12 @@ export const useSetAlert = () => {
       setSuccessSignIn() {
         setSignIn({
           message: "You have successfully signed up",
+          type: "success",
+        });
+      },
+      setSuccessLogout() {
+        setSignIn({
+          message: "You have successfully logged out",
           type: "success",
         });
       },
